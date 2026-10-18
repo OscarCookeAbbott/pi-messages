@@ -1,0 +1,34 @@
+{
+  "name": "@oscar-robin/pi-messaging",
+  "version": "0.1.0",
+  "description": "Discord and Slack webhook notifications for Pi tools and extensions.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Oscar Cooke-Abbott",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OscarCookeAbbott/pi-messaging.git"
+  },
+  "homepage": "https://github.com/OscarCookeAbbott/pi-messaging#readme",
+  "bugs": { "url": "https://github.com/OscarCookeAbbott/pi-messaging/issues" },
+  "keywords": ["pi-package", "pi-extension", "messaging", "discord", "slack", "webhooks"],
+  "files": ["src/", "README.md", "LICENSE", "CHANGELOG.md", "CONTRIBUTING.md"],
+  "pi": { "extensions": ["./src/index.ts"] },
+  "engines": { "node": ">=22.19.0" },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "node --test test/*.test.ts",
+    "prepack": "npm run check && npm test"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "1.2.0",
+    "@earendil-works/pi-coding-agent": "1.2.0",
+    "@types/node": "22.19.19",
+    "typebox": "1.3.27",
+    "typescript": "7.0.2"
+  }
+}
