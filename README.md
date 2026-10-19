@@ -1,4 +1,4 @@
-# pi-messaging
+# pi-messages
 
 Discord and Slack webhook notifications for [Pi](https://pi.dev). One `send_message` tool and one shared service for other extensions. No runtime dependencies beyond Pi's host-provided schema library; transport uses Node's native `fetch`.
 
@@ -7,12 +7,12 @@ Discord and Slack webhook notifications for [Pi](https://pi.dev). One `send_mess
 Requires Node 22.19 or newer and Pi.
 
 ```sh
-pi install git:github.com/OscarCookeAbbott/pi-messaging
+pi install git:github.com/OscarCookeAbbott/pi-messages
 # Or try it for one session:
-pi -e git:github.com/OscarCookeAbbott/pi-messaging
+pi -e git:github.com/OscarCookeAbbott/pi-messages
 ```
 
-For local development, run `pi -e ./pi-messaging/src/index.ts` from the parent directory.
+For local development, run `pi -e ./pi-messages/src/index.ts` from the parent directory.
 
 Export either or both webhook URLs before starting Pi:
 
@@ -36,6 +36,8 @@ Ask Pi to send a notification, or call `send_message` with:
 The tool returns text plus `{ success: boolean, error?: string }` in `details`, with `isError: true` on failure. UI notifications are best-effort and are not required in headless mode.
 
 ## Shared extension API
+
+The package was renamed from `pi-messaging` to `pi-messages`; the `send_message` tool, `PI_MESSAGING_KEY` export and `pi.messaging` symbol remain unchanged for compatibility.
 
 The service is published synchronously at `globalThis[Symbol.for("pi.messaging")]`. Resolve it when needed, rather than caching it across reloads. No package import is required:
 
@@ -63,7 +65,7 @@ export default function (pi: ExtensionAPI) {
       text: `Pi completed tasks in directory: ${ctx.cwd}`,
     });
     if (!result.success) {
-      // Implement a fallback if needed. pi-messaging also notifies the current UI.
+      // Implement a fallback if needed. pi-messages also notifies the current UI.
     }
   });
 }
