@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -9,6 +9,8 @@ import { DefaultResourceLoader, SettingsManager } from "@earendil-works/pi-codin
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
 
 test("Pi discovers and loads only the messaging extension", async (t) => {
+  const metadata = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"));
+  assert.deepEqual(Object.keys(metadata.peerDependencies).sort(), ["@earendil-works/pi-coding-agent", "@earendil-works/pi-tui", "typebox"]);
   const directory = await mkdtemp(join(tmpdir(), "pi-messaging-package-"));
   const globals = globalThis as Record<symbol, unknown>;
   const key = Symbol.for("pi.messaging");

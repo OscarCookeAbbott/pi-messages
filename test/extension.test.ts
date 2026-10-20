@@ -37,7 +37,7 @@ function harness(t: TestContext) {
   };
 }
 
-test("registers a validated tool that returns Pi results and notifies on success", async (t) => {
+test("registers a validated tool with compact results and no duplicate success toast", async (t) => {
   t.mock.method(globalThis, "fetch", async () => new Response(null, { status: 204 }));
   const h = harness(t);
   assert.equal(h.tool.name, "send_message");
@@ -48,14 +48,14 @@ test("registers a validated tool that returns Pi results and notifies on success
   const result = await h.call({ platform: "slack", text: "hello" });
   assert.deepEqual(result.details, { success: true });
   assert.equal(result.isError, false);
-  assert.deepEqual(result.content, [{ type: "text", text: "Message successfully sent to slack." }]);
-  assert.deepEqual(h.notifications, [{ text: "Message sent to slack", level: "info" }]);
+  assert.deepEqual(result.content, [{ type: "text", text: "Sent to Slack." }]);
+  assert.deepEqual(h.notifications, []);
   h.emit("session_shutdown");
   h.emit("session_shutdown");
   assert.equal(globals[PI_MESSAGING_KEY], undefined);
 });
 
-test("tool and shared API errors are structured and notify without throwing", async (t) => {
+test("tool errors render once while shared API errors still notify without throwing", async (t) => {
   t.mock.method(globalThis, "fetch", async () => { throw new Error("secret URL"); });
   const h = harness(t);
   h.emit("session_start");
@@ -63,9 +63,42 @@ test("tool and shared API errors are structured and notify without throwing", as
   assert.equal(result.isError, true);
   assert.deepEqual(result.details, { success: false, error: "Slack webhook request failed." });
   assert.deepEqual(await h.service.send({ platform: "slack", text: "hello" }), result.details);
-  assert.deepEqual(h.notifications, Array(2).fill({ text: "Messaging error: Slack webhook request failed.", level: "error" }));
+  assert.deepEqual(h.notifications, [{ text: "Messaging error: Slack webhook request failed.", level: "error" }]);
   t.mock.method(h.ctx.ui, "notify", () => { throw new Error("UI unavailable"); });
   assert.equal((await h.service.send({ platform: "slack", text: "hi" })).success, false);
+});
+
+test("message renderers separate bounded user previews from compact agent feedback", async (t) => {
+  t.mock.method(globalThis, "fetch", async () => new Response(null, { status: 204 }));
+  const h = harness(t);
+  const text = "FIRST\n" + "middle\n".repeat(20) + "LAST";
+  const result = await h.call({ platform: "slack", text });
+  const theme = { fg: (_color: string, text: string) => text, bold: (text: string) => text };
+  assert.equal(typeof h.tool.renderCall, "function");
+  assert.equal(typeof h.tool.renderResult, "function");
+  const header = (h.tool.renderCall! as Function)({ platform: "slack", text }, theme, {}).render(80).join("\n");
+  assert.match(header, /Slack/);
+  assert.doesNotMatch(header, /FIRST|LAST/);
+  const render = h.tool.renderResult! as Function;
+  const context = { args: { platform: "slack", text } };
+  const collapsed = render(result, { expanded: false }, theme, context).render(80).join("\n");
+  assert.match(collapsed, /FIRST/);
+  assert.match(collapsed, /expand/);
+  assert.doesNotMatch(collapsed, /LAST/);
+  assert.match(collapsed, /\x1b\[1m\x1b\[38;2;96;165;250mMessage sent\./);
+  assert.match(render(result, { expanded: true }, theme, context).render(80).join("\n"), /LAST/);
+  assert.deepEqual(result.content, [{ type: "text", text: "Sent to Slack." }]);
+  assert.deepEqual(h.notifications, []);
+  assert.match(render(result, { expanded: false }, theme, {}).render(80).join("\n"), /sent/i);
+  const failure = { content: [{ type: "text", text: "Delivery failed." }], details: {} };
+  assert.match(render(failure, { expanded: false }, theme, { isError: true }).render(80).join("\n"), /Delivery failed/);
+  t.mock.method(globalThis, "fetch", async () => new Response(null, { status: 500 }));
+  const failed = await h.call({ platform: "both", text: "hello" });
+  assert.equal(failed.isError, true);
+  const failedOutput = render(failed, { expanded: false }, theme, { isError: true }).render(200).join("\n");
+  assert.match(failedOutput, /Other destinations may have received the message; do not retry both/);
+  assert.doesNotMatch(failedOutput, /\x1b\[38;2;96;165;250m|Message sent\./);
+  assert.deepEqual(h.notifications, []);
 });
 
 test("shutdown cleanup is idempotent and cannot remove a newer singleton", (t) => {

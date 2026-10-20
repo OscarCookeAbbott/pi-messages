@@ -1,6 +1,6 @@
 # pi-messages
 
-Discord and Slack webhook notifications for [Pi](https://pi.dev). One `send_message` tool and one shared service for other extensions. No runtime dependencies beyond Pi's host-provided schema library; transport uses Node's native `fetch`.
+Discord and Slack webhook notifications for [Pi](https://pi.dev). One `send_message` tool and one shared service for other extensions. Pi supplies its SDK, TUI and schema library; transport uses Node's native `fetch`, with no extra transport dependencies.
 
 ## Install
 
@@ -33,7 +33,7 @@ Ask Pi to send a notification, or call `send_message` with:
 
 `platform` is `discord`, `slack`, or `both`. Text must be nonblank. Messages use each service's native text formatting and size limits (Discord content is limited to 2,000 characters); oversized messages are not split or truncated. Sending publishes content outside the Pi process: do not include secrets or private session contents without authorisation.
 
-The tool returns text plus `{ success: boolean, error?: string }` in `details`, with `isError: true` on failure. UI notifications are best-effort and are not required in headless mode.
+The tool returns a compact acknowledgement plus `{ success: boolean, error?: string }` in `details`, with `isError: true` on failure. The TUI shows the destination, a five-visual-line message preview and a bold blue acknowledgement; expand for the full message. Tool results do not also emit duplicate UI toasts. Shared-API failures still notify the current UI on a best-effort basis; headless callers need no UI.
 
 ## Shared extension API
 
